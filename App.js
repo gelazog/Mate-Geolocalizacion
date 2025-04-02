@@ -15,16 +15,16 @@ export default function App() {
   const stopsData = [
     { 
       id: '1', 
-      name: 'Parada 1', 
-      latitude: 40.416775, 
-      longitude: -3.703790,
+      name: 'Parada 1 - UTT', 
+      latitude: 32.460274, 
+      longitude: -116.824994,
       radius: 100 // radio en metros para considerar que está cerca
     },
     { 
       id: '2', 
-      name: 'Parada 2', 
-      latitude: 40.417975, 
-      longitude: -3.707590,
+      name: 'Parada 2- Calimax abejas', 
+      latitude: 32.477697, 
+      longitude:  -116.861433,
       radius: 100
     },
     { 
