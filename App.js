@@ -15,33 +15,37 @@ export default function App() {
     routes: [
       {
         id: "route1",
-        name: "Ruta Centro",
+        name: "Ruta Florido",
         stops: [
-          { id: "stop1", name: "Parada Principal", latitude: 40.416775, longitude: -3.703790 },
-          { id: "stop2", name: "Plaza Mayor", latitude: 40.415551, longitude: -3.707397 },
-          { id: "stop3", name: "Gran Vía", latitude: 40.420161, longitude: -3.705752 },
+          { id: "stop1", name: "Parada Florido - Av. Florido", latitude: 32.5200, longitude: -117.0450 },
+          { id: "stop2", name: "Parada UTT - Campus UTT", latitude: 32.5250, longitude: -117.0480 },
+          { id: "stop3", name: "Parada Florido - Centro de Atención", latitude: 32.5210, longitude: -117.0440 },
+          { id: "stop4", name: "Parada Florido - Terminal", latitude: 32.5220, longitude: -117.0430 }
         ]
       },
       {
         id: "route2",
-        name: "Ruta Norte",
+        name: "Ruta Morita",
         stops: [
-          { id: "stop4", name: "Nuevos Ministerios", latitude: 40.446478, longitude: -3.692394 },
-          { id: "stop5", name: "Chamartín", latitude: 40.472054, longitude: -3.683519 },
-          { id: "stop6", name: "Plaza Castilla", latitude: 40.466765, longitude: -3.689160 },
+          { id: "stop5", name: "Parada Morita - Av. Morita", latitude: 32.5170, longitude: -117.0410 },
+          { id: "stop6", name: "Parada Morita - Calimax Las Abejas", latitude: 32.5165, longitude: -117.0405 },
+          { id: "stop7", name: "Parada Morita - Esquina Morita", latitude: 32.5180, longitude: -117.0400 },
+          { id: "stop8", name: "Parada Morita - Centro Comercial", latitude: 32.5190, longitude: -117.0390 }
         ]
       },
       {
         id: "route3",
-        name: "Ruta Sur",
+        name: "Ruta Centro/Otay",
         stops: [
-          { id: "stop7", name: "Atocha", latitude: 40.406514, longitude: -3.691833 },
-          { id: "stop8", name: "Legazpi", latitude: 40.391347, longitude: -3.699687 },
-          { id: "stop9", name: "Villaverde", latitude: 40.347008, longitude: -3.700428 },
+          { id: "stop9", name: "Parada Centro - Plaza Constitución", latitude: 32.5149, longitude: -117.0382 },
+          { id: "stop10", name: "Parada Centro - Av. Revolución", latitude: 32.5135, longitude: -117.0370 },
+          { id: "stop11", name: "Parada Otay - Terminal Otay", latitude: 32.5110, longitude: -117.0350 },
+          { id: "stop12", name: "Parada Centro - Otra Parada", latitude: 32.5150, longitude: -117.0360 }
         ]
       }
     ]
   };
+  
 
   // Al cargar la app, solicitar permisos de ubicación inmediatamente
   useEffect(() => {
