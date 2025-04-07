@@ -1,5 +1,7 @@
+
+
 import React, { useState, useEffect } from 'react';
-import { StyleSheet, Text, View, Button, FlatList, TouchableOpacity, ActivityIndicator } from 'react-native';
+import { StyleSheet, Text, View, Button, FlatList, TouchableOpacity, ActivityIndicator, Modal } from 'react-native';
 import * as Location from 'expo-location';
 import { StatusBar } from 'expo-status-bar';
 
@@ -9,43 +11,53 @@ export default function App() {
   const [errorMsg, setErrorMsg] = useState(null);
   const [currentScreen, setCurrentScreen] = useState('loading'); // 'loading', 'routeSelection', 'stops'
   const [selectedRoute, setSelectedRoute] = useState(null);
+  const [distanceLimit, setDistanceLimit] = useState(null); // null = todas, o un número en km
+  const [showLimitModal, setShowLimitModal] = useState(false);
+
+  // Opciones de límites de distancia en km
+  const distanceLimits = [
+    { value: 1, label: '1 km' },
+    { value: 3, label: '3 km' },
+    { value: 5, label: '5 km' },
+    { value: 20.20, label: '20 km' },
+    { value: null, label: 'Todas las paradas' }
+  ];
 
   // Datos de rutas y paradas en formato JSON
-  const routesData = {
-    routes: [
-      {
-        id: "route1",
-        name: "Ruta Florido",
-        stops: [
-          { id: "stop1", name: "Parada Florido - Av. Florido", latitude: 32.5200, longitude: -117.0450 },
-          { id: "stop2", name: "Parada UTT - Campus UTT", latitude: 32.5250, longitude: -117.0480 },
-          { id: "stop3", name: "Parada Florido - Centro de Atención", latitude: 32.5210, longitude: -117.0440 },
-          { id: "stop4", name: "Parada Florido - Terminal", latitude: 32.5220, longitude: -117.0430 }
-        ]
-      },
-      {
-        id: "route2",
-        name: "Ruta Morita",
-        stops: [
-          { id: "stop5", name: "Parada Morita - Av. Morita", latitude: 32.5170, longitude: -117.0410 },
-          { id: "stop6", name: "Parada Morita - Calimax Las Abejas", latitude: 32.5165, longitude: -117.0405 },
-          { id: "stop7", name: "Parada Morita - Esquina Morita", latitude: 32.5180, longitude: -117.0400 },
-          { id: "stop8", name: "Parada Morita - Centro Comercial", latitude: 32.5190, longitude: -117.0390 }
-        ]
-      },
-      {
-        id: "route3",
-        name: "Ruta Centro/Otay",
-        stops: [
-          { id: "stop9", name: "Parada Centro - Plaza Constitución", latitude: 32.5149, longitude: -117.0382 },
-          { id: "stop10", name: "Parada Centro - Av. Revolución", latitude: 32.5135, longitude: -117.0370 },
-          { id: "stop11", name: "Parada Otay - Terminal Otay", latitude: 32.5110, longitude: -117.0350 },
-          { id: "stop12", name: "Parada Centro - Otra Parada", latitude: 32.5150, longitude: -117.0360 }
-        ]
-      }
-    ]
-  };
-  
+const routesData = {
+  routes: [
+    {
+      id: "route1",
+      name: "Ruta Florido",
+      stops: [
+        { id: "stop1", name: "Parada Florido - Av. Florido", latitude: 32.5200, longitude: -117.0450 },
+        { id: "stop2", name: "Parada UTT - Campus UTT", latitude: 32.5250, longitude: -117.0480 },
+        { id: "stop3", name: "Parada Florido - Centro de Atención", latitude: 32.5210, longitude: -117.0440 },
+        { id: "stop4", name: "Parada Florido - Terminal", latitude: 32.5220, longitude: -117.0430 }
+      ]
+    },
+    {
+      id: "route2",
+      name: "Ruta Morita",
+      stops: [
+        { id: "stop5", name: "Parada Morita - Av. Morita", latitude: 32.5170, longitude: -117.0410 },
+        { id: "stop6", name: "Parada Morita - Calimax Las Abejas", latitude: 32.5165, longitude: -117.0405 },
+        { id: "stop7", name: "Parada Morita - Esquina Morita", latitude: 32.5180, longitude: -117.0400 },
+        { id: "stop8", name: "Parada Morita - Centro Comercial", latitude: 32.5190, longitude: -117.0390 }
+      ]
+    },
+    {
+      id: "route3",
+      name: "Ruta Centro/Otay",
+      stops: [
+        { id: "stop9", name: "Parada Centro - Plaza Constitución", latitude: 32.5149, longitude: -117.0382 },
+        { id: "stop10", name: "Parada Centro - Av. Revolución", latitude: 32.5135, longitude: -117.0370 },
+        { id: "stop11", name: "Parada Otay - Terminal Otay", latitude: 32.5110, longitude: -117.0350 },
+        { id: "stop12", name: "Parada Centro - Otra Parada", latitude: 32.5150, longitude: -117.0360 }
+      ]
+    }
+  ]
+};
 
   // Al cargar la app, solicitar permisos de ubicación inmediatamente
   useEffect(() => {
@@ -90,17 +102,26 @@ export default function App() {
   // Calcular distancia euclidiana entre dos puntos
   const calculateEuclideanDistance = (lat1, lon1, lat2, lon2) => {
     // Simplificamos usando distancia euclidiana directa entre coordenadas
-    // Esto es una aproximación para distancias cortas
     const x = lat2 - lat1;
     const y = lon2 - lon1;
     return Math.sqrt(x * x + y * y);
   };
 
-  // Ordenar paradas por cercanía al usuario
-  const sortStopsByDistance = (stops) => {
-    if (!location) return stops;
+  // Convertir distancia en grados a kilómetros (aproximado)
+  const convertToKm = (distance) => {
+    // Factor aproximado: 111.32 km = 1 grado en latitud
+    return distance * 111.32;
+  };
+
+  // Obtener paradas ordenadas y filtradas por distancia
+  const getFilteredStops = () => {
+    if (!selectedRoute || !selectedRoute.stops) return [];
     
-    return [...stops].sort((a, b) => {
+    // Si no hay ubicación, devolver las paradas sin filtrar
+    if (!location) return selectedRoute.stops;
+    
+    // Ordenar paradas por distancia
+    const sortedStops = [...selectedRoute.stops].sort((a, b) => {
       const distA = calculateEuclideanDistance(
         location.coords.latitude, location.coords.longitude,
         a.latitude, a.longitude
@@ -112,6 +133,19 @@ export default function App() {
       );
       
       return distA - distB;
+    });
+    
+    // Si no hay límite, devolver todas las paradas ordenadas
+    if (distanceLimit === null) return sortedStops;
+    
+    // Filtrar paradas que estén dentro del límite de distancia
+    return sortedStops.filter(stop => {
+      const dist = calculateEuclideanDistance(
+        location.coords.latitude, location.coords.longitude,
+        stop.latitude, stop.longitude
+      );
+      
+      return convertToKm(dist) <= distanceLimit;
     });
   };
 
@@ -125,6 +159,17 @@ export default function App() {
   const goBackToRoutes = () => {
     setSelectedRoute(null);
     setCurrentScreen('routeSelection');
+  };
+
+  // Mostrar modal de selección de límite
+  const toggleLimitModal = () => {
+    setShowLimitModal(!showLimitModal);
+  };
+
+  // Seleccionar un límite de distancia
+  const selectDistanceLimit = (limit) => {
+    setDistanceLimit(limit);
+    setShowLimitModal(false);
   };
 
   // Renderizar cada ruta disponible
@@ -146,9 +191,7 @@ export default function App() {
         item.latitude, item.longitude
       ) : 0;
       
-    // Convertir la distancia (en grados) a una distancia aproximada en kilómetros
-    // Factor aproximado: 111.32 km = 1 grado en latitud
-    const distanceInKm = distance * 111.32;
+    const distanceInKm = convertToKm(distance);
     
     return (
       <View style={[
@@ -159,7 +202,7 @@ export default function App() {
         {index === 0 && <Text style={styles.closestLabel}>¡Más cercana!</Text>}
         {location && (
           <Text style={styles.distanceText}>
-            Distancia aproximada: {distanceInKm.toFixed(2)} km
+            Distancia: {distanceInKm.toFixed(2)} km
           </Text>
         )}
         <Text style={styles.coordsText}>
@@ -168,6 +211,42 @@ export default function App() {
       </View>
     );
   };
+
+  // Modal para seleccionar el límite de distancia
+  const renderLimitModal = () => (
+    <Modal
+      visible={showLimitModal}
+      transparent={true}
+      animationType="slide"
+      onRequestClose={toggleLimitModal}
+    >
+      <View style={styles.modalContainer}>
+        <View style={styles.modalContent}>
+          <Text style={styles.modalTitle}>Selecciona límite de distancia</Text>
+          
+          {distanceLimits.map((limit) => (
+            <TouchableOpacity
+              key={limit.label}
+              style={[
+                styles.limitOption,
+                distanceLimit === limit.value ? styles.selectedLimit : null
+              ]}
+              onPress={() => selectDistanceLimit(limit.value)}
+            >
+              <Text style={styles.limitOptionText}>{limit.label}</Text>
+            </TouchableOpacity>
+          ))}
+          
+          <TouchableOpacity
+            style={styles.cancelButton}
+            onPress={toggleLimitModal}
+          >
+            <Text style={styles.cancelButtonText}>Cancelar</Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+    </Modal>
+  );
 
   // Pantalla de carga inicial
   if (currentScreen === 'loading') {
@@ -208,6 +287,8 @@ export default function App() {
   }
 
   // Pantalla de paradas de la ruta seleccionada
+  const filteredStops = getFilteredStops();
+  
   return (
     <View style={styles.container}>
       <StatusBar style="auto" />
@@ -219,14 +300,44 @@ export default function App() {
         <Text style={styles.routeTitle}>{selectedRoute.name}</Text>
       </View>
       
-      <Text style={styles.subtitle}>Paradas ordenadas por cercanía:</Text>
+      <View style={styles.filterContainer}>
+        <Text style={styles.filterText}>
+          Límite de distancia: {distanceLimit ? `${distanceLimit} km` : 'Todas las paradas'}
+        </Text>
+        <TouchableOpacity
+          style={styles.filterButton}
+          onPress={toggleLimitModal}
+        >
+          <Text style={styles.filterButtonText}>Cambiar límite</Text>
+        </TouchableOpacity>
+      </View>
       
-      <FlatList
-        data={sortStopsByDistance(selectedRoute.stops)}
-        renderItem={renderStopItem}
-        keyExtractor={item => item.id}
-        style={styles.list}
-      />
+      {filteredStops.length > 0 ? (
+        <>
+          <Text style={styles.subtitle}>
+            Paradas ordenadas por cercanía
+            {distanceLimit ? ` (hasta ${distanceLimit} km)` : ''}:
+          </Text>
+          
+          <FlatList
+            data={filteredStops}
+            renderItem={renderStopItem}
+            keyExtractor={item => item.id}
+            style={styles.list}
+          />
+        </>
+      ) : (
+        <View style={styles.noStopsContainer}>
+          <Text style={styles.noStopsText}>
+            No hay paradas dentro del límite de {distanceLimit} km.
+          </Text>
+          <Text style={styles.noStopsSubtext}>
+            Intenta aumentar el límite de distancia.
+          </Text>
+        </View>
+      )}
+      
+      {renderLimitModal()}
     </View>
   );
 }
@@ -294,7 +405,7 @@ const styles = StyleSheet.create({
   header: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 20,
+    marginBottom: 10,
   },
   backButton: {
     marginRight: 10,
@@ -307,6 +418,28 @@ const styles = StyleSheet.create({
     fontSize: 22,
     fontWeight: 'bold',
     flex: 1,
+  },
+  filterContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 10,
+    paddingVertical: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: '#ddd',
+  },
+  filterText: {
+    fontSize: 14,
+  },
+  filterButton: {
+    backgroundColor: '#007AFF',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 15,
+  },
+  filterButtonText: {
+    color: '#fff',
+    fontWeight: '500',
   },
   stopItem: {
     backgroundColor: '#f0f0f0',
@@ -339,5 +472,63 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: '#666',
     fontFamily: 'monospace',
+  },
+  modalContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+  },
+  modalContent: {
+    width: '80%',
+    backgroundColor: '#fff',
+    borderRadius: 10,
+    padding: 20,
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    marginBottom: 15,
+    textAlign: 'center',
+  },
+  limitOption: {
+    padding: 15,
+    borderRadius: 5,
+    marginBottom: 10,
+    backgroundColor: '#f0f0f0',
+  },
+  selectedLimit: {
+    backgroundColor: '#e6f7ff',
+    borderWidth: 1,
+    borderColor: '#007AFF',
+  },
+  limitOptionText: {
+    fontSize: 16,
+    textAlign: 'center',
+  },
+  cancelButton: {
+    padding: 15,
+    marginTop: 5,
+  },
+  cancelButtonText: {
+    fontSize: 16,
+    color: '#007AFF',
+    textAlign: 'center',
+  },
+  noStopsContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+  },
+  noStopsText: {
+    fontSize: 18,
+    textAlign: 'center',
+    marginBottom: 10,
+  },
+  noStopsSubtext: {
+    fontSize: 16,
+    color: '#666',
+    textAlign: 'center',
   },
 });
